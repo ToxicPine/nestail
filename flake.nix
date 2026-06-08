@@ -25,7 +25,7 @@
             --vendor=true \
             --config deno.json \
             --lock deno.lock \
-            src/server.ts
+            src/cli.ts
 
           runHook postBuild
         '';
@@ -36,14 +36,19 @@
           rm -f node_modules/.deno/.setup-cache.bin
 
           mkdir -p "$out"
-          cp -R node_modules "$out/"
+          if [ -d node_modules ]; then
+            cp -R node_modules "$out/"
+          fi
+          if [ -d vendor ]; then
+            cp -R vendor "$out/"
+          fi
 
           runHook postInstall
         '';
 
         outputHashAlgo = "sha256";
         outputHashMode = "recursive";
-        outputHash = "sha256-dXgZd8+yg+3FVSlPQqNsgXzHyR/NJhUfWHluz0FiLhk=";
+        outputHash = "sha256-phFhKX+q+BvGSgYomAdGK+uZgoT8c1BzwBj5sH+DHTM=";
       };
     in
     {
@@ -62,7 +67,12 @@
 
             mkdir -p "$out/share/nestail" "$out/bin"
             cp -R deno.json deno.lock src "$out/share/nestail/"
-            cp -R ${denoDeps}/node_modules "$out/share/nestail/"
+            if [ -d ${denoDeps}/node_modules ]; then
+              cp -R ${denoDeps}/node_modules "$out/share/nestail/"
+            fi
+            if [ -d ${denoDeps}/vendor ]; then
+              cp -R ${denoDeps}/vendor "$out/share/nestail/"
+            fi
 
             makeWrapper ${pkgs.deno}/bin/deno "$out/bin/nestail" \
               --add-flags "run" \
@@ -71,8 +81,8 @@
               --add-flags "--config $out/share/nestail/deno.json" \
               --add-flags "--lock $out/share/nestail/deno.lock" \
               --add-flags "--allow-net=0.0.0.0,127.0.0.1,localhost" \
-              --add-flags "--allow-env=SCRAMJET_HOST,SCRAMJET_PORT" \
-              --add-flags "$out/share/nestail/src/server.ts"
+              --add-flags "--allow-env=SCRAMJET_HOST,SCRAMJET_PORT,NESTAIL_AUTH_SECRET,NESTAIL_TRUST_PROXY_HEADERS" \
+              --add-flags "$out/share/nestail/src/cli.ts"
 
             runHook postInstall
           '';

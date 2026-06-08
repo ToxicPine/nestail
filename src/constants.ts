@@ -8,4 +8,4 @@ export const INTERNAL_PREFIXES = [
   "__route-proxy",
   "__transport",
   "__health",
-] as const;
+];

@@ -1,15 +1,21 @@
 import type { RouteError } from "./errors.ts";
+import { z } from "@zod/zod";
 import {
   canTransportTo,
   parsePublicRouteId,
   type RouteTargetGetter,
 } from "./routes.ts";
 
+const BareHeadersSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.array(z.string())]),
+);
+
 export async function handleTransport(
   request: Request,
   getRouteTarget: RouteTargetGetter,
 ): Promise<Response> {
-  const routeId = transportRouteId(request);
+  const routeId = transportRouteIdFromRequest(request);
   if (!routeId) {
     return bareError(400, "MISSING_ROUTE", "Missing transport route.");
   }
@@ -135,7 +141,7 @@ function handleTransportWebSocket(request: Request, target: URL): Response {
   return response;
 }
 
-function transportRouteId(request: Request): string | null {
+export function transportRouteIdFromRequest(request: Request): string | null {
   const url = new URL(request.url);
   const [, prefix, id = ""] = url.pathname.split("/");
   if (prefix !== "__transport") return null;
@@ -148,7 +154,7 @@ function requestHeadersFromBare(value: string | null): Headers {
     return headers;
   }
 
-  const parsed = JSON.parse(value) as Record<string, string | string[]>;
+  const parsed = parseBareHeaders(value);
   for (const [name, raw] of Object.entries(parsed)) {
     const lower = name.toLowerCase();
     if (
@@ -172,6 +178,11 @@ function requestHeadersFromBare(value: string | null): Headers {
   }
 
   return headers;
+}
+
+function parseBareHeaders(value: string): Record<string, string | string[]> {
+  const parsed: unknown = JSON.parse(value);
+  return BareHeadersSchema.parse(parsed);
 }
 
 function headersObject(headers: Headers): Record<string, string> {

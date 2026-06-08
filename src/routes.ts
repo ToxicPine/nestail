@@ -64,7 +64,7 @@ export function canTransportTo(remote: URL, target: URL): boolean {
 }
 
 export function parsePublicRouteId(id: string): Result<RouteId, RouteError> {
-  if (INTERNAL_PREFIXES.includes(id as never)) {
+  if (INTERNAL_PREFIXES.includes(id)) {
     return err({
       category: "bad-route",
       status: 404,
